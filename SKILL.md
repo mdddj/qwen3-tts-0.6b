@@ -39,6 +39,14 @@ bash scripts/agent_use.sh \
   --output outputs/reply.wav
 ```
 
+Windows PowerShell one command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 `
+  -Text "你好，这是一段给客户的语音回复。" `
+  -Output outputs\reply.wav
+```
+
 Use China mirror:
 
 ```bash
@@ -56,6 +64,12 @@ python3 scripts/qwen3_tts.py \
   --download-only \
   --cache-dir ./model_cache \
   --cn-mirror
+```
+
+Windows pre-download:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install_and_warmup.ps1
 ```
 
 Use HTTP/HTTPS proxy:
@@ -118,4 +132,6 @@ Use `--voice-mode` to force behavior when needed:
 - `scripts/qwen3_tts.py`: CLI entrypoint for synthesis and proxy handling.
 - `scripts/install_and_warmup.sh`: one-command setup for customer machines.
 - `scripts/agent_use.sh`: one-command agent workflow (auto install, warmup, and synthesize).
+- `scripts/install_and_warmup.ps1`: Windows one-command setup and warmup.
+- `scripts/agent_use.ps1`: Windows one-command agent workflow.
 - `references/setup-and-proxy.md`: dependency install, China mirror, troubleshooting.

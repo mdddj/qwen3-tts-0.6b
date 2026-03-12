@@ -1,4 +1,4 @@
 interface:
   display_name: "Qwen3 TTS 0.6B"
   short_description: "Run local Qwen3 0.6B text-to-speech with proxy support"
-  default_prompt: "After GitHub install, run bash scripts/agent_use.sh once to auto-install runtime and warm up model cache. For voice control, use --voice-mode clone/custom/design with --spk-audio/--spk-text or --speaker/--instruct. Prefer --cn-mirror or proxy options in China."
+  default_prompt: "After GitHub install, run one bootstrap command: use bash scripts/agent_use.sh on Linux/macOS or powershell -ExecutionPolicy Bypass -File scripts\\agent_use.ps1 on Windows. For voice control, use voice mode clone/custom/design with reference audio or speaker/instruct options. Prefer mirror/proxy in China."
