@@ -1,6 +1,3 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
     [Parameter(Mandatory = $true)]
     [string]$Text,
@@ -21,6 +18,9 @@ param(
     [string]$HttpsProxy = "",
     [string]$PypiIndexUrl = "https://pypi.tuna.tsinghua.edu.cn/simple"
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path (Join-Path $scriptDir "..")).Path

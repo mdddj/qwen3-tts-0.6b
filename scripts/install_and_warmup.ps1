@@ -1,6 +1,3 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
     [string]$VenvDir = ".venv",
     [string]$CacheDir = "model_cache",
@@ -9,6 +6,9 @@ param(
     [string]$HttpProxy = "",
     [string]$HttpsProxy = ""
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 function Invoke-HostPython {
     param(
