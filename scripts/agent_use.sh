@@ -10,6 +10,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${ROOT_DIR}/.venv"
 PYTHON_BIN="${VENV_DIR}/bin/python"
 CACHE_DIR="${ROOT_DIR}/model_cache"
+MODEL_ID="Qwen/Qwen3-TTS-12Hz-0.6B-Base"
 TEXT=""
 OUTPUT=""
 USE_CN_MIRROR=1
@@ -33,6 +34,7 @@ Options:
   --text <text>                 Text to synthesize
   --output <path>               Output wav path
   --cache-dir <dir>             Model cache dir (default: ./model_cache)
+  --model-id <id>               Hugging Face model id
   --voice-mode <mode>           auto|base|clone|custom|design
   --speaker <name>              Speaker name for custom mode
   --instruct <text>             Style instruction for custom/design mode
@@ -58,6 +60,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --cache-dir)
       CACHE_DIR="${2:-}"
+      shift 2
+      ;;
+    --model-id)
+      MODEL_ID="${2:-}"
       shift 2
       ;;
     --voice-mode)
@@ -174,6 +180,7 @@ if [[ "${USE_CN_MIRROR}" == "1" ]]; then
     --text "${TEXT}" \
     --output "${OUTPUT}" \
     --cache-dir "${CACHE_DIR}" \
+    --model-id "${MODEL_ID}" \
     --cn-mirror \
     "${PROXY_ARGS[@]}" \
     "${VOICE_ARGS[@]}"
@@ -182,6 +189,7 @@ else
     --text "${TEXT}" \
     --output "${OUTPUT}" \
     --cache-dir "${CACHE_DIR}" \
+    --model-id "${MODEL_ID}" \
     "${PROXY_ARGS[@]}" \
     "${VOICE_ARGS[@]}"
 fi

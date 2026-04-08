@@ -1,6 +1,6 @@
 # Qwen3 TTS 0.6B
 
-本地文本转语音工具，基于 Qwen/Qwen3-TTS-12Hz-0.6B-Base 模型，支持中国网络环境的代理和镜像配置。
+本地语音生成工具，基于 Qwen3-TTS 模型，支持中国网络环境的代理和镜像配置。默认 `0.6B-Base` 模型为克隆模式，需要参考音频和参考文本。
 
 ## 功能特性
 
@@ -23,8 +23,11 @@ bash scripts/install_and_warmup.sh
 
 ```bash
 bash scripts/agent_use.sh \
+  --voice-mode clone \
   --text "你好，这是一段测试语音。" \
-  --output outputs/reply.wav
+  --output outputs/reply.wav \
+  --spk-audio ./sample_ref.wav \
+  --spk-text "这是参考音频对应的文字"
 ```
 
 ### 语音克隆
@@ -43,10 +46,22 @@ bash scripts/agent_use.sh \
 ```bash
 bash scripts/agent_use.sh \
   --voice-mode custom \
+  --model-id Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice \
   --speaker Cherry \
   --instruct "Please speak in a warm and friendly tone." \
   --text "欢迎使用我们的产品。" \
   --output outputs/custom.wav
+```
+
+### Voice Design
+
+```bash
+bash scripts/agent_use.sh \
+  --model-id Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign \
+  --voice-mode design \
+  --instruct "Generate a calm, deep, and professional male narration style." \
+  --text "这是产品介绍的开场白。" \
+  --output outputs/design.wav
 ```
 
 ## 中国网络环境
@@ -77,6 +92,7 @@ bash scripts/agent_use.sh \
 ## 系统要求
 
 - Python 3.8+
+- sox
 - ffmpeg
 - espeak-ng
 

@@ -32,16 +32,26 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 -Text "安装后自检" -Output outputs\smoke.wav
 ```
 
-Then use the same command for normal replies:
+Then use clone mode with the default Base model:
 
 ```bash
-bash scripts/agent_use.sh --text "这是用户请求的语音回复" --output outputs/reply.wav
+bash scripts/agent_use.sh \
+  --voice-mode clone \
+  --spk-audio ./sample_ref.wav \
+  --spk-text "这是参考音频对应文案" \
+  --text "这是用户请求的语音回复" \
+  --output outputs/reply.wav
 ```
 
 Windows:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 -Text "这是用户请求的语音回复" -Output outputs\reply.wav
+powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 `
+  -VoiceMode clone `
+  -SpkAudio .\sample_ref.wav `
+  -SpkText "这是参考音频对应文案" `
+  -Text "这是用户请求的语音回复" `
+  -Output outputs\reply.wav
 ```
 
 Clone voice with reference audio:
@@ -71,6 +81,7 @@ Custom speaker with style instruction:
 ```bash
 bash scripts/agent_use.sh \
   --voice-mode custom \
+  --model-id Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice \
   --speaker Cherry \
   --instruct "Please speak in a warm, elegant narration tone." \
   --text "欢迎来到我们的产品演示。" \
@@ -81,6 +92,7 @@ Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 `
+  -ModelId Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice `
   -VoiceMode custom `
   -Speaker Cherry `
   -Instruct "Please speak in a warm, elegant narration tone." `
@@ -92,6 +104,9 @@ If proxy is required:
 
 ```bash
 bash scripts/agent_use.sh \
+  --voice-mode clone \
+  --spk-audio ./sample_ref.wav \
+  --spk-text "这是参考音频对应文案" \
   --text "带代理的语音回复" \
   --output outputs/reply.wav \
   --http-proxy http://127.0.0.1:7890 \
@@ -102,6 +117,9 @@ Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 `
+  -VoiceMode clone `
+  -SpkAudio .\sample_ref.wav `
+  -SpkText "这是参考音频对应文案" `
   -Text "带代理的语音回复" `
   -Output outputs\reply.wav `
   -HttpProxy "http://127.0.0.1:7890" `
@@ -111,6 +129,7 @@ powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 `
 ## Windows prerequisites
 
 - Install Python 3.12+ and ensure `python` (or `py`) is available in terminal.
+- Install `sox` and ensure `sox --version` works in a new PowerShell window.
 - Run PowerShell with script execution allowed for this command (the examples use `-ExecutionPolicy Bypass`).
 - For China networks, keep default mirror settings or pass proxy values.
 
@@ -210,5 +229,7 @@ export HTTPS_PROXY=http://127.0.0.1:7890
 - ImportError for `qwen_tts`: reinstall `qwen-tts` in the same Python environment used to run the script.
 - Model download timeout: use `--cn-mirror` plus proxy.
 - Missing audio backend tools: install `ffmpeg` and `espeak-ng`.
+- Windows reports `'sox' is not recognized`: install SoX, reopen terminal, and confirm `sox --version` works.
 - Offline mode cannot find model: run `--download-only` first and keep `--cache-dir` consistent.
-- Certain voice modes may depend on selected model capability. If `custom/design` fails, switch to `--voice-mode clone` with reference audio.
+- `Qwen3TTSModel` has no attribute `generate`: the installed qwen-tts package does not provide plain text-only `model.generate()` for Qwen3-TTS. Use clone mode with a Base model, or switch `--model-id` to `*-CustomVoice` / `*-VoiceDesign`.
+- Base model reports it does not support `generate_custom_voice`: `Qwen/Qwen3-TTS-12Hz-0.6B-Base` is clone-only. Use `--voice-mode clone` plus reference audio/text, or switch models.

@@ -1,13 +1,14 @@
 ---
 name: qwen3-tts-0-6b
-description: Use Qwen/Qwen3-TTS-12Hz-0.6B-Base for local text-to-speech generation and optional voice style transfer with reference audio. Use when users ask for text-to-audio output, spoken replies, WAV synthesis, TTS demo generation, or AI responses that include downloadable voice files. Trigger on requests like "文本转语音", "TTS", "语音回复", "read this aloud", "生成音频", and when China network proxy/mirror configuration is needed for model download.
+description: Use Qwen3-TTS models for local speech generation. The default `Qwen/Qwen3-TTS-12Hz-0.6B-Base` model is clone-only and requires reference audio plus transcript. Use `*-CustomVoice` for fixed preset speakers or `*-VoiceDesign` for instruction-only voice design. Trigger on requests like "文本转语音", "TTS", "语音回复", "read this aloud", "生成音频", and when China network proxy/mirror configuration is needed for model download.
 ---
 
 # Qwen3 TTS 0.6B
 
 ## Overview
 
-Generate WAV audio from text with `Qwen3-TTS-12Hz-0.6B-Base`.
+Generate WAV audio with Qwen3-TTS models.
+The default `Qwen3-TTS-12Hz-0.6B-Base` model requires clone mode with reference audio and transcript.
 Support China-friendly setup via proxy variables and Hugging Face mirror endpoint.
 
 ## Workflow
@@ -23,36 +24,48 @@ Support China-friendly setup via proxy variables and Hugging Face mirror endpoin
 
 ## Quick Commands
 
-Basic synthesis:
+Clone synthesis with the default Base model:
 
 ```bash
 python3 scripts/qwen3_tts.py \
+  --voice-mode clone \
   --text "你好，这是一段测试语音。" \
-  --output outputs/reply.wav
+  --output outputs/reply.wav \
+  --spk-audio sample_ref.wav \
+  --spk-text "这是参考音频对应的文字"
 ```
 
 Agent-safe one command (recommended after GitHub skill install):
 
 ```bash
 bash scripts/agent_use.sh \
+  --voice-mode clone \
   --text "你好，这是一段给客户的语音回复。" \
-  --output outputs/reply.wav
+  --output outputs/reply.wav \
+  --spk-audio sample_ref.wav \
+  --spk-text "这是参考音频对应的文字"
 ```
 
 Windows PowerShell one command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\agent_use.ps1 `
+  -VoiceMode clone `
   -Text "你好，这是一段给客户的语音回复。" `
-  -Output outputs\reply.wav
+  -Output outputs\reply.wav `
+  -SpkAudio sample_ref.wav `
+  -SpkText "这是参考音频对应的文字"
 ```
 
 Use China mirror:
 
 ```bash
 python3 scripts/qwen3_tts.py \
+  --voice-mode clone \
   --text "欢迎使用千问语音合成" \
   --output outputs/reply.wav \
+  --spk-audio sample_ref.wav \
+  --spk-text "这是参考音频对应的文字" \
   --cn-mirror
 ```
 
@@ -78,6 +91,9 @@ Use HTTP/HTTPS proxy:
 python3 scripts/qwen3_tts.py \
   --text "这条音频通过代理下载模型后生成" \
   --output outputs/reply.wav \
+  --voice-mode clone \
+  --spk-audio sample_ref.wav \
+  --spk-text "这是参考音频对应的文字" \
   --http-proxy http://127.0.0.1:7890 \
   --https-proxy http://127.0.0.1:7890
 ```
@@ -98,6 +114,7 @@ Custom speaker + style instruction:
 ```bash
 python3 scripts/qwen3_tts.py \
   --voice-mode custom \
+  --model-id Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice \
   --speaker Cherry \
   --instruct "Please speak in a warm and friendly customer-support tone." \
   --text "您好，您的订单已经发货，预计明天送达。" \
@@ -109,6 +126,7 @@ Voice design from text instruction:
 ```bash
 python3 scripts/qwen3_tts.py \
   --voice-mode design \
+  --model-id Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign \
   --instruct "Generate a calm, deep, and professional male narration style." \
   --text "这是产品介绍的开场白。" \
   --output outputs/design.wav
@@ -122,10 +140,10 @@ If user asks for both, always provide text first, then provide generated file pa
 Prefer WAV output for compatibility.
 On a fresh environment, always execute one bootstrap synthesis command first to make sure runtime and model cache are ready.
 Use `--voice-mode` to force behavior when needed:
-- `clone`: use reference audio/text.
-- `custom`: use predefined speaker plus optional style instruction.
-- `design`: synthesize using style instruction text.
-- `base`: plain synthesis.
+- `clone`: use a Base model plus reference audio/text.
+- `custom`: use a `*-CustomVoice` model plus a predefined speaker and optional style instruction.
+- `design`: use a `*-VoiceDesign` model plus style instruction text.
+- `base`: kept only for backward compatibility; the current qwen-tts public API does not support plain text-only synthesis with the Base model.
 
 ## Resources
 

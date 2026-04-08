@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import inspect
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Any
@@ -40,6 +41,18 @@ def configure_cache_dir(cache_dir: str | None) -> str | None:
     return resolved
 
 
+def ensure_external_dependencies() -> None:
+    if shutil.which("sox"):
+        return
+
+    raise RuntimeError(
+        "Missing external dependency: sox\n"
+        "Install SoX and make sure it is available on PATH.\n"
+        "Verify with: sox --version\n"
+        "Windows download: https://sourceforge.net/projects/sox/"
+    )
+
+
 def read_text_from_args(text: str | None, text_file: str | None) -> str:
     if text:
         return text.strip()
@@ -49,6 +62,17 @@ def read_text_from_args(text: str | None, text_file: str | None) -> str:
     if not content:
         raise ValueError(f"Text file is empty: {text_file}")
     return content
+
+
+def detect_model_family(model_id: str) -> str:
+    lowered = model_id.lower()
+    if "customvoice" in lowered:
+        return "custom"
+    if "voicedesign" in lowered:
+        return "design"
+    if lowered.endswith("-base") or "-base" in lowered:
+        return "clone"
+    return "unknown"
 
 
 def load_model_class():
@@ -144,6 +168,34 @@ def validate_voice_inputs(args: argparse.Namespace, mode: str) -> None:
         raise ValueError("design mode requires --instruct.")
 
 
+def validate_model_capability(model_id: str, mode: str) -> None:
+    family = detect_model_family(model_id)
+
+    if mode == "base":
+        raise ValueError(
+            "plain text-only synthesis is not supported by the current qwen-tts "
+            "public API for Qwen3-TTS models. Use one of these instead:\n"
+            "  - clone mode with a Base model plus --spk-audio and --spk-text\n"
+            "  - custom mode with a *-CustomVoice model\n"
+            "  - design mode with a *-VoiceDesign model"
+        )
+
+    if family == "clone" and mode != "clone":
+        raise ValueError(
+            f"model '{model_id}' is a Base/clone model and only supports clone mode. "
+            "Provide --spk-audio and --spk-text, or switch --model-id to a "
+            "CustomVoice/VoiceDesign model."
+        )
+    if family == "custom" and mode != "custom":
+        raise ValueError(
+            f"model '{model_id}' is a CustomVoice model and should be used with custom mode."
+        )
+    if family == "design" and mode != "design":
+        raise ValueError(
+            f"model '{model_id}' is a VoiceDesign model and should be used with design mode."
+        )
+
+
 def synthesize_audio(
     model,
     mode: str,
@@ -159,118 +211,79 @@ def synthesize_audio(
 
     if mode == "clone":
         clone_fn = getattr(model, "generate_voice_clone", None)
-        if callable(clone_fn):
-            result = call_with_compatible_kwargs(
-                clone_fn,
-                [
-                    {
-                        "text": text,
-                        "language": language,
-                        "ref_audio": spk_audio,
-                        "ref_text": spk_text,
-                        "output_path": output_str,
-                    },
-                    {
-                        "text": text,
-                        "language": language,
-                        "spk_audio_path": spk_audio,
-                        "spk_text": spk_text,
-                        "output_path": output_str,
-                    },
-                    {
-                        "text": text,
-                        "language": language,
-                        "spk_audio": spk_audio,
-                        "spk_text": spk_text,
-                        "output_path": output_str,
-                    },
-                ],
+        if not callable(clone_fn):
+            raise RuntimeError(
+                "Installed qwen-tts does not expose generate_voice_clone for this model."
             )
-        else:
-            result = call_with_compatible_kwargs(
-                model.generate,
-                [
-                    {
-                        "text": text,
-                        "language": language,
-                        "spk_audio_path": spk_audio,
-                        "spk_text": spk_text,
-                        "output_path": output_str,
-                    },
-                    {
-                        "text": text,
-                        "language": language,
-                        "spk_audio": spk_audio,
-                        "spk_text": spk_text,
-                        "output_path": output_str,
-                    },
-                    {"text": text, "spk_audio": spk_audio, "spk_text": spk_text},
-                ],
-            )
+        result = call_with_compatible_kwargs(
+            clone_fn,
+            [
+                {
+                    "text": text,
+                    "language": language,
+                    "ref_audio": spk_audio,
+                    "ref_text": spk_text,
+                    "output_path": output_str,
+                },
+                {
+                    "text": text,
+                    "language": language,
+                    "spk_audio_path": spk_audio,
+                    "spk_text": spk_text,
+                    "output_path": output_str,
+                },
+                {
+                    "text": text,
+                    "language": language,
+                    "spk_audio": spk_audio,
+                    "spk_text": spk_text,
+                    "output_path": output_str,
+                },
+            ],
+        )
         maybe_persist_audio(model, result, output_path)
         return
 
     if mode == "custom":
         custom_fn = getattr(model, "generate_custom_voice", None)
-        if callable(custom_fn):
-            result = call_with_compatible_kwargs(
-                custom_fn,
-                [
-                    {
-                        "text": text,
-                        "speaker": speaker,
-                        "instruct": instruct,
-                        "output_path": output_str,
-                    },
-                    {"text": text, "speaker": speaker, "instruct": instruct},
-                ],
+        if not callable(custom_fn):
+            raise RuntimeError(
+                "Installed qwen-tts does not expose generate_custom_voice for this model."
             )
-        else:
-            result = call_with_compatible_kwargs(
-                model.generate,
-                [
-                    {
-                        "text": text,
-                        "speaker": speaker,
-                        "instruct": instruct,
-                        "output_path": output_str,
-                    },
-                    {"text": text, "speaker": speaker, "instruct": instruct},
-                ],
-            )
+        result = call_with_compatible_kwargs(
+            custom_fn,
+            [
+                {
+                    "text": text,
+                    "speaker": speaker,
+                    "instruct": instruct,
+                    "output_path": output_str,
+                },
+                {"text": text, "speaker": speaker, "instruct": instruct},
+            ],
+        )
         maybe_persist_audio(model, result, output_path)
         return
 
     if mode == "design":
         design_fn = getattr(model, "generate_voice_design", None)
-        if callable(design_fn):
-            result = call_with_compatible_kwargs(
-                design_fn,
-                [
-                    {"text": text, "instruct": instruct, "output_path": output_str},
-                    {"text": text, "instruct": instruct},
-                ],
+        if not callable(design_fn):
+            raise RuntimeError(
+                "Installed qwen-tts does not expose generate_voice_design for this model."
             )
-        else:
-            result = call_with_compatible_kwargs(
-                model.generate,
-                [
-                    {"text": text, "instruct": instruct, "output_path": output_str},
-                    {"text": text, "instruct": instruct},
-                ],
-            )
+        result = call_with_compatible_kwargs(
+            design_fn,
+            [
+                {"text": text, "instruct": instruct, "output_path": output_str},
+                {"text": text, "instruct": instruct},
+            ],
+        )
         maybe_persist_audio(model, result, output_path)
         return
 
-    # mode == "base"
-    result = call_with_compatible_kwargs(
-        model.generate,
-        [
-            {"text": text, "output_path": output_str},
-            {"text": text},
-        ],
+    raise RuntimeError(
+        "Unsupported mode 'base'. Base models in qwen-tts public API are clone-only."
     )
-    maybe_persist_audio(model, result, output_path)
 
 
 def parse_args() -> argparse.Namespace:
@@ -356,6 +369,7 @@ def main() -> int:
     voice_mode = resolve_voice_mode(args)
     try:
         validate_voice_inputs(args, voice_mode)
+        validate_model_capability(args.model_id, voice_mode)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -363,6 +377,12 @@ def main() -> int:
     apply_proxy_env(args.http_proxy, args.https_proxy)
     configure_hf_endpoint(args.cn_mirror, args.hf_endpoint)
     resolved_cache = configure_cache_dir(args.cache_dir)
+
+    try:
+        ensure_external_dependencies()
+    except Exception as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
     text = None
     if not args.download_only:
